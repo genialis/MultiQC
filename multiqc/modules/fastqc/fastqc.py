@@ -467,6 +467,9 @@ class MultiqcModule(BaseMultiqcModule):
             d=json.dumps([self.anchor.replace('-', '_'), data]),
         )
 
+        # Immediately set backward compatible global variable
+        html += '<script type="text/javascript">load_fastqc_seq_content();</script>'
+
         self.add_section (
             name = 'Per Base Sequence Content',
             anchor = 'fastqc_per_base_sequence_content',

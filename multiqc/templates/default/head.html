@@ -37,5 +37,9 @@ page contents, it's machine-readable tags for browsers and search engines.
 <script type="text/javascript">
 mqc_compressed_plotdata = document.getElementById('mqc_compressed_plotdata').innerHTML;
 mqc_config = JSON.parse(document.getElementById('mqc_config').innerHTML);
+
+// Backward compatible global variables
+num_datasets_plot_limit = mqc_config['num_datasets_plot_limit'];
+mqc_sample_names_rename = mqc_config['sample_names_rename'];
 </script>
 {% endraw %}

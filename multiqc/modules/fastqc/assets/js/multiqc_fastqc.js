@@ -13,12 +13,20 @@ function load_fastqc_passfails() {
         var key_value = JSON.parse(elem.innerHTML);
         fastqc_passfails[key_value[0]] = key_value[1];
     });
+
+    // Backward compatible global variables
+    $.each(fastqc_passfails, function (key, value) {
+        window['fastqc_passfails_' + key] = value;
+    });
 }
 
 function load_fastqc_seq_content() {
     $('.fastqc_seq_content').each(function (i, elem) {
         var key_value = JSON.parse(elem.innerHTML);
         fastqc_seq_content[key_value[0]] = key_value[1];
+
+        // Backward compatible global variable
+        window['fastqc_seq_content_data'] = key_value[1];
     });
 }
 
