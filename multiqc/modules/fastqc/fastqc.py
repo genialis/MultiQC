@@ -22,6 +22,7 @@ import zipfile
 from multiqc import config
 from multiqc.plots import linegraph, bargraph
 from multiqc.modules.base_module import BaseMultiqcModule
+from multiqc.utils import report
 
 # Initialise the logger
 log = logging.getLogger(__name__)
@@ -100,7 +101,10 @@ class MultiqcModule(BaseMultiqcModule):
                     statuses[section][s_name] = status
                 except KeyError:
                     statuses[section] = {s_name: status}
-        self.intro += '<script type="text/javascript">fastqc_passfails_{} = {};</script>'.format(self.anchor.replace('-','_'), json.dumps(statuses))
+        self.intro += '''<script type="text/javascript">
+            if (!window.fastqc_passfails) fastqc_passfails = {{}};
+            fastqc_passfails[{}] = {};
+        </script>'''.format(json.dumps(self.anchor.replace('-','_')), json.dumps(statuses))
 
         # Now add each section in order
         self.read_count_plot()
@@ -451,16 +455,22 @@ class MultiqcModule(BaseMultiqcModule):
                 <div><span id="fastqc_seq_heatmap_key_g"> %G: <span>-</span></span></div>
             </div>
             <div id="fastqc_seq_heatmap_div" class="fastqc-overlay-plot">
-                <div id="fastqc_per_base_sequence_content_plot" class="hc-plot has-custom-export">
+                <div id="{id}" class="fastqc_per_base_sequence_content_plot hc-plot has-custom-export">
                     <canvas id="fastqc_seq_heatmap" height="100%" width="800px" style="width:100%;"></canvas>
                 </div>
             </div>
             <div class="clearfix"></div>
         </div>
         <script type="text/javascript">
-            fastqc_seq_content_data = {d};
-            $(function () {{ fastqc_seq_content_heatmap(); }});
-        </script>'''.format(d=json.dumps(data))
+            if (!window.fastqc_seq_content) fastqc_seq_content = {{}};
+            fastqc_seq_content[{module_key}] = {d};
+        </script>
+        '''.format(
+            # Generate unique plot ID, needed in mqc_export_selectplots
+            id=report.save_htmlid('fastqc_per_base_sequence_content_plot'),
+            module_key=json.dumps(self.anchor.replace('-', '_')),
+            d=json.dumps(data),
+        )
 
         self.add_section (
             name = 'Per Base Sequence Content',
