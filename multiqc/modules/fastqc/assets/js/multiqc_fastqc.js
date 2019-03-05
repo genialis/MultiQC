@@ -4,160 +4,6 @@
 // Per Base Sequence Content
 ///////////////
 
-// Global vars
-s_height = 10;
-sample_names = [];
-sample_statuses = [];
-labels = [];
-c_width = 0;
-c_height = 0;
-ypos = 0;
-max_bp = 0;
-
-// Function to plot heatmap
-function fastqc_seq_content_heatmap(module_element, module_key) {
-
-    // Get sample names, rename and skip hidden samples
-    sample_names = [];
-    sample_statuses = [];
-    var p_data = {};
-    var hidden_samples = 0;
-    $.each(fastqc_seq_content[module_key], function(s_name, data){
-        // rename sample names
-        var t_status = fastqc_passfails[module_key]['per_base_sequence_content'][s_name];
-        $.each(window.mqc_rename_f_texts, function(idx, f_text){
-            if(window.mqc_rename_regex_mode){
-                var re = new RegExp(f_text,'g');
-                s_name = s_name.replace(re, window.mqc_rename_t_texts[idx]);
-            } else {
-                s_name = s_name.replace(f_text, window.mqc_rename_t_texts[idx]);
-            }
-        });
-        sample_statuses[s_name] = t_status;
-        p_data[s_name] = JSON.parse(JSON.stringify(data)); // clone data
-
-        var hide_sample = false;
-        for (i = 0; i < window.mqc_hide_f_texts.length; i++) {
-            var f_text = window.mqc_hide_f_texts[i];
-            if(window.mqc_hide_regex_mode){
-                if(s_name.match(f_text)){ hide_sample = true; }
-            } else {
-                if(s_name.indexOf(f_text) > -1){ hide_sample = true; }
-            }
-        }
-        if(window.mqc_hide_mode == 'show'){
-            hide_sample = !hide_sample;
-        }
-        if(!hide_sample){ sample_names.push(s_name); }
-        else { hidden_samples += 1; }
-    });
-    num_samples = sample_names.length;
-    module_element.find('#fastqc_seq_heatmap_div .samples-hidden-warning, #fastqc_seq_heatmap_div .fastqc-heatmap-no-samples').remove();
-    module_element.find('#fastqc_seq_heatmap_div .hc-plot-wrapper').show();
-    if(num_samples == 0){
-        module_element.find('#fastqc_seq_heatmap_div .hc-plot-wrapper').hide();
-        module_element.find('#fastqc_seq_heatmap_div').prepend('<p class="fastqc-heatmap-no-samples text-muted">No samples found.</p>');
-    }
-    if(hidden_samples > 0){
-        module_element.find('#fastqc_seq_heatmap_div').prepend('<div class="samples-hidden-warning alert alert-warning"> \
-            <span class="glyphicon glyphicon-info-sign"></span> \
-            <strong>Warning:</strong> '+hidden_samples+' samples hidden in toolbox. \
-            <a href="#mqc_hidesamples" class="alert-link" onclick="mqc_toolbox_openclose(\'#mqc_hidesamples\', true); return false;">See toolbox.</a>\
-        </div>');
-    }
-    if(num_samples == 0){ return; }
-
-    // Convert the CSS percentage size into pixels
-    c_width = module_element.find('#fastqc_seq_heatmap').parent().width() - 5; // -5 for status bar
-    c_height = module_element.find('#fastqc_seq_heatmap').parent().height() - 2; // -2 for bottom line padding
-    s_height = c_height / num_samples;
-    // Minimum row height
-    if(s_height < 2){
-        s_height = 2;
-        c_height = num_samples * 2;
-        module_element.find('#fastqc_seq_heatmap').parent().parent().height(c_height+10);
-    }
-    // Resize the canvas properties
-    module_element.find('#fastqc_seq_heatmap').prop({
-        'width': c_width,
-        'height': c_height+1
-    });
-    var canvas = module_element.find('#fastqc_seq_heatmap')[0];
-    if (canvas && canvas.getContext) {
-        var ctx = canvas.getContext('2d');
-        ctx.strokeStyle = '#666666';
-        // First, do labels and get max base pairs
-        max_bp = 0;
-        labels = [];
-        $.each(sample_names, function(idx, s_name){
-            var s = p_data[s_name];
-            labels.push(s_name);
-            $.each(s, function(bp, v){
-                bp = parseInt(bp);
-                if(bp > max_bp){
-                    max_bp = bp;
-                }
-            });
-        });
-        ypos = 0;
-        $.each(sample_names, function(idx, s_name){
-
-            // Add a 5px wide bar indicating either status or Highlight
-            var status = sample_statuses[s_name];
-            var s_col = '#999999';
-            if(status == 'pass'){ s_col = '#5cb85c'; }
-            if(status == 'warn'){ s_col = '#f0ad4e'; }
-            if(status == 'fail'){ s_col = '#d9534f'; }
-            // Override status colour with highlights
-            $.each(window.mqc_highlight_f_texts, function(idx, f_text){
-                if((window.mqc_highlight_regex_mode && s_name.match(f_text)) || (!window.mqc_highlight_regex_mode && s_name.indexOf(f_text) > -1)){
-                  s_col = window.mqc_highlight_f_cols[idx];
-                }
-            });
-            ctx.fillStyle = s_col;
-            ctx.fillRect (0, ypos+1, 5, s_height-2);
-
-            // Plot the squares for the heatmap
-            var s = p_data[s_name];
-            var xpos = 6;
-            var last_bp = 0;
-            $.each(s, function(bp, v){
-                bp = parseInt(bp);
-                var this_width = (bp - last_bp) * (c_width / max_bp);
-                last_bp = bp;
-                // Very old versions of FastQC give counts instead of percentages
-                if(v['t'] > 100){
-                    var t = v['t'] + v['a'] + v['c'] + v['g'];
-                    v['t'] = (v['t']/t)*100;
-                    v['a'] = (v['a']/t)*100;
-                    v['c'] = (v['c']/t)*100;
-                    v['g'] = (v['g']/t)*100;
-                }
-                var r = Math.round((v['t'] / 100)*255);
-                var g = Math.round((v['a'] / 100)*255);
-                var b = Math.round((v['c'] / 100)*255);
-                ctx.fillStyle = 'rgb('+r+','+g+','+b+')';
-                // width+1 to avoid vertical white line gaps.
-                ctx.fillRect (xpos, ypos, this_width+1, s_height);
-                xpos += this_width;
-            });
-            // Draw a line under this row if we don't have too many samples
-            if(num_samples <= 20){
-                ctx.beginPath();
-                ctx.moveTo(6, ypos);
-                ctx.lineTo(c_width, ypos);
-                ctx.stroke();
-            }
-            ypos += s_height;
-        });
-        // Final line under row
-        ctx.beginPath();
-        ctx.moveTo(6, ypos);
-        ctx.lineTo(c_width, ypos);
-        ctx.stroke();
-    }
-}
-
 // Set up listeners etc on page load
 $(function () {
     // Go through each FastQC module in case there are multiple
@@ -169,8 +15,164 @@ $(function () {
 });
 
 function fastqc_module(module_element, module_key) {
+    // Per-module shared vars
+    var s_height = 10;
+    var num_samples = 0;
+    var sample_names = [];
+    var sample_statuses = [];
+    var labels = [];
+    var c_width = 0;
+    var c_height = 0;
+    var ypos = 0;
+    var max_bp = 0;
+    var current_single_plot = undefined;
+
+    // Function to plot heatmap
+    function fastqc_seq_content_heatmap() {
+        // Get sample names, rename and skip hidden samples
+        sample_names = [];
+        sample_statuses = [];
+        var p_data = {};
+        var hidden_samples = 0;
+        $.each(fastqc_seq_content[module_key], function(s_name, data){
+            // rename sample names
+            var t_status = fastqc_passfails[module_key]['per_base_sequence_content'][s_name];
+            $.each(window.mqc_rename_f_texts, function(idx, f_text){
+                if(window.mqc_rename_regex_mode){
+                    var re = new RegExp(f_text,'g');
+                    s_name = s_name.replace(re, window.mqc_rename_t_texts[idx]);
+                } else {
+                    s_name = s_name.replace(f_text, window.mqc_rename_t_texts[idx]);
+                }
+            });
+            sample_statuses[s_name] = t_status;
+            p_data[s_name] = JSON.parse(JSON.stringify(data)); // clone data
+
+            var hide_sample = false;
+            for (i = 0; i < window.mqc_hide_f_texts.length; i++) {
+                var f_text = window.mqc_hide_f_texts[i];
+                if(window.mqc_hide_regex_mode){
+                    if(s_name.match(f_text)){ hide_sample = true; }
+                } else {
+                    if(s_name.indexOf(f_text) > -1){ hide_sample = true; }
+                }
+            }
+            if(window.mqc_hide_mode == 'show'){
+                hide_sample = !hide_sample;
+            }
+            if(!hide_sample){ sample_names.push(s_name); }
+            else { hidden_samples += 1; }
+        });
+        num_samples = sample_names.length;
+        module_element.find('#fastqc_seq_heatmap_div .samples-hidden-warning, #fastqc_seq_heatmap_div .fastqc-heatmap-no-samples').remove();
+        module_element.find('#fastqc_seq_heatmap_div .hc-plot-wrapper').show();
+        if(num_samples == 0){
+            module_element.find('#fastqc_seq_heatmap_div .hc-plot-wrapper').hide();
+            module_element.find('#fastqc_seq_heatmap_div').prepend('<p class="fastqc-heatmap-no-samples text-muted">No samples found.</p>');
+        }
+        if(hidden_samples > 0){
+            module_element.find('#fastqc_seq_heatmap_div').prepend('<div class="samples-hidden-warning alert alert-warning"> \
+                <span class="glyphicon glyphicon-info-sign"></span> \
+                <strong>Warning:</strong> '+hidden_samples+' samples hidden in toolbox. \
+                <a href="#mqc_hidesamples" class="alert-link" onclick="mqc_toolbox_openclose(\'#mqc_hidesamples\', true); return false;">See toolbox.</a>\
+            </div>');
+        }
+        if(num_samples == 0){ return; }
+
+        // Convert the CSS percentage size into pixels
+        c_width = module_element.find('#fastqc_seq_heatmap').parent().width() - 5; // -5 for status bar
+        c_height = module_element.find('#fastqc_seq_heatmap').parent().height() - 2; // -2 for bottom line padding
+        s_height = c_height / num_samples;
+        // Minimum row height
+        if(s_height < 2){
+            s_height = 2;
+            c_height = num_samples * 2;
+            module_element.find('#fastqc_seq_heatmap').parent().parent().height(c_height+10);
+        }
+        // Resize the canvas properties
+        module_element.find('#fastqc_seq_heatmap').prop({
+            'width': c_width,
+            'height': c_height+1
+        });
+        var canvas = module_element.find('#fastqc_seq_heatmap')[0];
+        if (canvas && canvas.getContext) {
+            var ctx = canvas.getContext('2d');
+            ctx.strokeStyle = '#666666';
+            // First, do labels and get max base pairs
+            max_bp = 0;
+            labels = [];
+            $.each(sample_names, function(idx, s_name){
+                var s = p_data[s_name];
+                labels.push(s_name);
+                $.each(s, function(bp, v){
+                    bp = parseInt(bp);
+                    if(bp > max_bp){
+                        max_bp = bp;
+                    }
+                });
+            });
+            ypos = 0;
+            $.each(sample_names, function(idx, s_name){
+
+                // Add a 5px wide bar indicating either status or Highlight
+                var status = sample_statuses[s_name];
+                var s_col = '#999999';
+                if(status == 'pass'){ s_col = '#5cb85c'; }
+                if(status == 'warn'){ s_col = '#f0ad4e'; }
+                if(status == 'fail'){ s_col = '#d9534f'; }
+                // Override status colour with highlights
+                $.each(window.mqc_highlight_f_texts, function(idx, f_text){
+                    if((window.mqc_highlight_regex_mode && s_name.match(f_text)) || (!window.mqc_highlight_regex_mode && s_name.indexOf(f_text) > -1)){
+                      s_col = window.mqc_highlight_f_cols[idx];
+                    }
+                });
+                ctx.fillStyle = s_col;
+                ctx.fillRect (0, ypos+1, 5, s_height-2);
+
+                // Plot the squares for the heatmap
+                var s = p_data[s_name];
+                var xpos = 6;
+                var last_bp = 0;
+                $.each(s, function(bp, v){
+                    bp = parseInt(bp);
+                    var this_width = (bp - last_bp) * (c_width / max_bp);
+                    last_bp = bp;
+                    // Very old versions of FastQC give counts instead of percentages
+                    if(v['t'] > 100){
+                        var t = v['t'] + v['a'] + v['c'] + v['g'];
+                        v['t'] = (v['t']/t)*100;
+                        v['a'] = (v['a']/t)*100;
+                        v['c'] = (v['c']/t)*100;
+                        v['g'] = (v['g']/t)*100;
+                    }
+                    var r = Math.round((v['t'] / 100)*255);
+                    var g = Math.round((v['a'] / 100)*255);
+                    var b = Math.round((v['c'] / 100)*255);
+                    ctx.fillStyle = 'rgb('+r+','+g+','+b+')';
+                    // width+1 to avoid vertical white line gaps.
+                    ctx.fillRect (xpos, ypos, this_width+1, s_height);
+                    xpos += this_width;
+                });
+                // Draw a line under this row if we don't have too many samples
+                if(num_samples <= 20){
+                    ctx.beginPath();
+                    ctx.moveTo(6, ypos);
+                    ctx.lineTo(c_width, ypos);
+                    ctx.stroke();
+                }
+                ypos += s_height;
+            });
+            // Final line under row
+            ctx.beginPath();
+            ctx.moveTo(6, ypos);
+            ctx.lineTo(c_width, ypos);
+            ctx.stroke();
+        }
+    }
+
     // Draw sequence content heatmap
-    fastqc_seq_content_heatmap(module_element, module_key);
+    fastqc_seq_content_heatmap();
+
 
     // Add the pass / warning / fails counts to each of the FastQC submodule headings
     $.each(fastqc_passfails[module_key], function(k, vals){
@@ -420,12 +422,13 @@ function fastqc_module(module_element, module_key) {
 
     // Highlight the custom heatmap
     $(document).on('mqc_highlights mqc_hidesamples mqc_renamesamples mqc_plotresize', function(e){
-        fastqc_seq_content_heatmap(module_element, module_key);
+        fastqc_seq_content_heatmap();
     });
     // Seq content - window resized
     $(window).resize(function() {
-        fastqc_seq_content_heatmap(module_element, module_key);
+        fastqc_seq_content_heatmap();
     });
+
 
     function plot_single_seqcontent(s_name){
         current_single_plot = s_name;
