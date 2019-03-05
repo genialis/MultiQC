@@ -103,8 +103,14 @@ class MultiqcModule(BaseMultiqcModule):
                     statuses[section] = {s_name: status}
         self.intro += '''<script type="text/javascript">
             if (!window.fastqc_passfails) fastqc_passfails = {{}};
-            fastqc_passfails[{}] = {};
-        </script>'''.format(json.dumps(self.anchor.replace('-','_')), json.dumps(statuses))
+            fastqc_passfails[{module_key}] = {data};
+
+            // Backward compatible global variables
+            window['fastqc_passfails_' + {module_key}] = fastqc_passfails[{module_key}];
+        </script>'''.format(
+            module_key=json.dumps(self.anchor.replace('-','_')),
+            data=json.dumps(statuses),
+        )
 
         # Now add each section in order
         self.read_count_plot()
@@ -464,6 +470,9 @@ class MultiqcModule(BaseMultiqcModule):
         <script type="text/javascript">
             if (!window.fastqc_seq_content) fastqc_seq_content = {{}};
             fastqc_seq_content[{module_key}] = {d};
+
+            // Backward compatible global variables
+            window['fastqc_seq_content_data'] = fastqc_seq_content[{module_key}];
         </script>
         '''.format(
             # Generate unique plot ID, needed in mqc_export_selectplots

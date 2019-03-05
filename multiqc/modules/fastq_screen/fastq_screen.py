@@ -167,6 +167,10 @@ class MultiqcModule(BaseMultiqcModule):
         <script type="text/javascript">
             if (!window.fq_screen_dict) fq_screen_dict = {{}};
             fq_screen_dict[{plot_id}] = {dict};
+
+            // Backward compatible global variables
+            fq_screen_data = fq_screen_dict[{plot_id}].data;
+            fq_screen_categories = fq_screen_dict[{plot_id}].categories;
         </script>'''.format(
             plot_id=json.dumps(plot_id),
             dict=json.dumps({ 'data': data, 'categories': categories }),
