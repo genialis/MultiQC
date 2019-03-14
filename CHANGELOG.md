@@ -24,6 +24,7 @@
     * Fixed bug where `--dirs` broke certain input files. ([#821](https://github.com/ewels/MultiQC/issues/821))
 * **RSeQC**
     * Fixed bug where Junction Saturation plot for a single sample was mislabelling the lines.
+    * When including a RSeQC section multiple times in one report, clicking Junction Saturation plot now behaves as you would expect.
 * **Samtools**
     * Utilize in-built `read_count_multiplier` functionality to plot `flagstat` results more nicely
 * **SnpEff**
