@@ -7,6 +7,7 @@
 // Set up listeners etc on page load
 $(function () {
     // Go through each FastQC module in case there are multiple
+    // #mqc-module-section-fastqc, #mqc-module-section-fastqc-1, ...
     $('.mqc-module-section[id^="mqc-module-section-fastqc"]').each(function(){
         var module_element = $(this);
         var module_key = module_element.attr('id').replace(/-/g, '_').replace('mqc_module_section_', '');
@@ -291,6 +292,7 @@ function fastqc_module(module_element, module_key) {
     // Seq Content heatmap export button
     module_element.find('#fastqc_per_base_sequence_content_export_btn').click(function(e){
         e.preventDefault();
+        // In case of repeated modules: #fastqc_per_base_sequence_content_plot, #fastqc_per_base_sequence_content_plot-1, ..
         var plot_id = module_element.find('.fastqc_per_base_sequence_content_plot').attr('id');
         // Tick only this plot in the toolbox and slide out
         $('#mqc_export_selectplots input').prop('checked', false);

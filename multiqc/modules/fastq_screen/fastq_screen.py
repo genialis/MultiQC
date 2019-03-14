@@ -178,6 +178,7 @@ class MultiqcModule(BaseMultiqcModule):
 
         html += '''<script type="text/javascript">
             $(function () {
+                // In case of repeated modules: #fq_screen_plot, #fq_screen_plot-1, ..
                 $(".fq_screen_plot").each(function () {
                     var plot_id = $(this).attr('id');
 

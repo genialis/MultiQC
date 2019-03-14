@@ -98,6 +98,7 @@ def plot_single():
 
     return """
     function(e){
+        // In case of repeated modules: #rseqc_junction_saturation_plot, #rseqc_junction_saturation_plot-1, ..
         var rseqc_junction_saturation_plot = $(e.currentTarget).closest('.hc-plot');
         var rseqc_junction_saturation_plot_id = rseqc_junction_saturation_plot.attr('id');
         var junction_sat_single_hint = rseqc_junction_saturation_plot.closest('.mqc-section').find('#junction_sat_single_hint');
