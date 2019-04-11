@@ -164,19 +164,19 @@ class MultiqcModule(BaseMultiqcModule):
 
         plot_id = report.save_htmlid('fq_screen_plot')
         html = '''<div id={plot_id} class="fq_screen_plot hc-plot"></div>
-        <script type="text/javascript">
-            if (!window.fq_screen_dict) fq_screen_dict = {{}};
-            fq_screen_dict[{plot_id}] = {dict};
-
-            // Backward compatible global variables
-            fq_screen_data = fq_screen_dict[{plot_id}].data;
-            fq_screen_categories = fq_screen_dict[{plot_id}].categories;
-        </script>'''.format(
+        <script type="application/json" class="fq_screen_dict">{dict}</script>
+        '''.format(
             plot_id=json.dumps(plot_id),
-            dict=json.dumps({ 'data': data, 'categories': categories }),
+            dict=json.dumps({ 'plot_id': plot_id, 'data': data, 'categories': categories }),
         )
 
         html += '''<script type="text/javascript">
+            fq_screen_dict = { }; // { <plot_id>: data, categories }
+            $('.fq_screen_dict').each(function (i, elem) {
+                var dict = JSON.parse(elem.innerHTML);
+                fq_screen_dict[dict.plot_id] = dict;
+            });
+
             $(function () {
                 // In case of repeated modules: #fq_screen_plot, #fq_screen_plot-1, ..
                 $(".fq_screen_plot").each(function () {
