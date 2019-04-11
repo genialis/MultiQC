@@ -101,16 +101,9 @@ class MultiqcModule(BaseMultiqcModule):
                     statuses[section][s_name] = status
                 except KeyError:
                     statuses[section] = {s_name: status}
-        self.intro += '''<script type="text/javascript">
-            if (!window.fastqc_passfails) fastqc_passfails = {{}};
-            fastqc_passfails[{module_key}] = {data};
+        self.intro += '<script type="application/json" class="fastqc_passfails">{}</script>'.format(json.dumps([self.anchor.replace('-', '_'), statuses ]))
 
-            // Backward compatible global variables
-            window['fastqc_passfails_' + {module_key}] = fastqc_passfails[{module_key}];
-        </script>'''.format(
-            module_key=json.dumps(self.anchor.replace('-','_')),
-            data=json.dumps(statuses),
-        )
+        self.intro += '<script type="text/javascript">load_fastqc_passfails();</script>'
 
         # Now add each section in order
         self.read_count_plot()

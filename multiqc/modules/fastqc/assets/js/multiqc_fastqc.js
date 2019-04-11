@@ -4,6 +4,16 @@
 // Per Base Sequence Content
 ///////////////
 
+// Global vars
+fastqc_passfails = {}; // { <module>: { <section>: { <sample>: { data } } }
+
+function load_fastqc_passfails() {
+    $('.fastqc_passfails').each(function (i, elem) {
+        var key_value = JSON.parse(elem.innerHTML);
+        fastqc_passfails[key_value[0]] = key_value[1];
+    });
+}
+
 // Set up listeners etc on page load
 $(function () {
     // Go through each FastQC module in case there are multiple
