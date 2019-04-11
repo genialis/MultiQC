@@ -6,6 +6,7 @@
 
 // Global vars
 fastqc_passfails = {}; // { <module>: { <section>: { <sample>: { data } } }
+fastqc_seq_content = {}; // { <module>: { <sample>: data } }
 
 function load_fastqc_passfails() {
     $('.fastqc_passfails').each(function (i, elem) {
@@ -14,8 +15,17 @@ function load_fastqc_passfails() {
     });
 }
 
+function load_fastqc_seq_content() {
+    $('.fastqc_seq_content').each(function (i, elem) {
+        var key_value = JSON.parse(elem.innerHTML);
+        fastqc_seq_content[key_value[0]] = key_value[1];
+    });
+}
+
 // Set up listeners etc on page load
 $(function () {
+    load_fastqc_seq_content();
+
     // Go through each FastQC module in case there are multiple
     // #mqc-module-section-fastqc, #mqc-module-section-fastqc-1, ...
     $('.mqc-module-section[id^="mqc-module-section-fastqc"]').each(function(){

@@ -460,18 +460,11 @@ class MultiqcModule(BaseMultiqcModule):
             </div>
             <div class="clearfix"></div>
         </div>
-        <script type="text/javascript">
-            if (!window.fastqc_seq_content) fastqc_seq_content = {{}};
-            fastqc_seq_content[{module_key}] = {d};
-
-            // Backward compatible global variables
-            window['fastqc_seq_content_data'] = fastqc_seq_content[{module_key}];
-        </script>
+        <script type="application/json" class="fastqc_seq_content">{d}</script>
         '''.format(
             # Generate unique plot ID, needed in mqc_export_selectplots
             id=report.save_htmlid('fastqc_per_base_sequence_content_plot'),
-            module_key=json.dumps(self.anchor.replace('-', '_')),
-            d=json.dumps(data),
+            d=json.dumps([self.anchor.replace('-', '_'), data]),
         )
 
         self.add_section (
